@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice UPI Payment System</title>
+    <style>
+        /* CSS is the same as before, no changes needed */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #4CAF50, #45a049); color: white; text-align: center; padding: 30px; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .header p { font-size: 1.1rem; opacity: 0.9; }
+        .main-content { padding: 40px; }
+        .status-section { background: #f8f9fa; border-radius: 15px; padding: 25px; margin-bottom: 30px; text-align: center; border-left: 5px solid #ccc; }
+        .status-section.success { background: linear-gradient(135deg, #d4edda, #c3e6cb); border-left-color: #28a745; }
+        .status-section.error { background: linear-gradient(135deg, #f8d7da, #f5c6cb); border-left-color: #dc3545; }
+        .status-section.merchant-choice { background: linear-gradient(135deg, #fff3cd, #ffeaa7); border-left-color: #ffc107; }
+        .status-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 10px; }
+        .status-instruction { font-size: 1rem; color: #6c757d; line-height: 1.6; }
+        .voice-form { background: white; border-radius: 15px; padding: 30px; margin-bottom: 30px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05); }
+        .voice-input-section { text-align: center; }
+        .voice-input { width: 100%; padding: 15px 20px; font-size: 1.2rem; border: 2px solid #e9ecef; border-radius: 10px; margin-bottom: 20px; }
+        .submit-btn, .listen-btn { background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border: none; padding: 15px 40px; font-size: 1.1rem; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; margin: 5px; }
+        .listen-btn.listening { background: linear-gradient(135deg, #dc3545, #c82333); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+        .reset-btn { background: linear-gradient(135deg, #6c757d, #5a6268); color: white; border: none; padding: 10px 25px; font-size: 0.9rem; border-radius: 8px; cursor: pointer; text-decoration: none; }
+        .selected-merchant-display, .amount-display, .merchant-options, .transactions-section { border-radius: 15px; padding: 25px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 Voice UPI Payment System</h1>
+            <p>Complete UPI payments using voice commands - Pure Python Flask</p>
+        </div>
+
+        <div class="main-content">
+            <!-- This hidden div contains the text we want the AI to speak -->
+            <div id="text-to-speak" style="display: none;">{{ instruction }}</div>
+
+            <!-- This div tells our script when the conversation should stop -->
+            <div id="conversation-status" 
+                 data-is-active="{{ 'true' if stage not in ['ready', 'payment_success', 'payment_cancelled'] else 'false' }}">
+            </div>
+
+            <div class="status-section 
+                {% if stage in ['error', 'payment_cancelled'] %}error
+                {% elif stage in ['payment_success', 'ready'] %}success
+                {% elif stage == 'merchant_choice' %}merchant-choice
+                {% endif %}">
+                <div class="status-title">{{ message }}</div>
+                <div class="status-instruction">{{ instruction }}</div>
+            </div>
+
+            <form id="payment-form" method="POST" action="/process_voice" class="voice-form">
+                <div class="voice-input-section">
+                    <label for="voice_text" class="voice-input-label">🎙️ Your Command:</label>
+                    <input type="text" id="voice_text" name="voice_text" class="voice-input" placeholder="Click 'Start Conversation' to begin..." readonly>
+                    
+                    <button type="button" id="listen-btn" class="listen-btn">Start Conversation</button>
+                    <button type="submit" class="submit-btn" style="display:none;">Process</button>
+                    <a href="/reset" class="reset-btn">🔄 Reset</a>
+                </div>
+            </form>
+
+            <!-- The rest of the HTML is unchanged -->
+            <!-- The rest of the HTML is the same -->
+{% if selected_merchant %}
+<div class="selected-merchant-display" style="background: #e8f5e8; border-left: 5px solid #4CAF50;">
+    <h3>🏪 Selected Merchant</h3>
+    <div class="merchant-details">
+        <strong>{{ selected_merchant.name }}</strong><br>
+        📍 {{ selected_merchant.location }}<br>
+        💳 UPI ID: {{ selected_merchant.upi_id }}
+    </div>
+</div>
+{% endif %}
+
+{% if amount %}
+<div class="amount-display" style="background: #e3f2fd; border-left: 5px solid #2196f3; text-align: center;">
+    <div class="amount" style="font-size: 2rem; font-weight: bold; color: #1565c0;">₹{{ "%.2f"|format(amount) }}</div>
+    <div>Payment Amount</div>
+</div>
+{% endif %}
+
+{% if merchant_options %}
+<div class="merchant-options" style="background: #fff8e1; border-left: 5px solid #ffc107;">
+    <h3>🔍 Choose Your Merchant</h3>
+    {% for option in merchant_options %}
+    <div class="merchant-option">{{ option }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if transactions %}
+<div class="transactions-section" style="background: #f1f3f4;">
+    <h3>Recent Transactions</h3>
+    {% for tx in transactions %}
+    <div class="transaction-item" style="background: white; border-radius: 10px; padding: 20px; margin: 15px 0; border-left: 4px solid #28a745; box-shadow: 0 3px 10px rgba(0,0,0,0.05);">
+        <div class="transaction-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span class="transaction-amount" style="font-size: 1.5rem; font-weight: bold; color: #28a745;">₹{{ "%.2f"|format(tx.amount) }}</span>
+            <span class="transaction-id" style="font-size: 0.9rem; color: #6c757d; background: #f8f9fa; padding: 5px 10px; border-radius: 5px;">{{ tx.id }}</span>
+        </div>
+        <div class="transaction-details">
+            Paid to <span class="transaction-merchant" style="font-weight: bold;">{{ tx.merchant_name }}</span> at {{ tx.merchant_location }}
+            <br><small>{{ tx.timestamp }}</small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+    <!-- NEW, SMARTER JAVASCRIPT FOR AUTOMATIC CONVERSATION -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const listenBtn = document.getElementById('listen-btn');
+            const voiceTextInput = document.getElementById('voice_text');
+            const paymentForm = document.getElementById('payment-form');
+            const textToSpeakDiv = document.getElementById('text-to-speak');
+            const conversationStatus = document.getElementById('conversation-status');
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                listenBtn.disabled = true;
+                listenBtn.textContent = 'Voice Not Supported';
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.interimResults = false;
+            recognition.lang = 'en-IN';
+
+            // --- Text to Speech (TTS) ---
+            function speak(text) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // NEW LOGIC: When speech ends, decide whether to listen again.
+                utterance.onend = () => {
+                    // Check the data attribute from our Flask template.
+                    const isConversationActive = conversationStatus.dataset.isActive === 'true';
+                    if (isConversationActive) {
+                        // If the conversation is ongoing, automatically start listening.
+                        recognition.start();
+                    } else {
+                        // If the conversation ended (e.g., success, cancel, reset), do nothing.
+                        listenBtn.textContent = 'Start New Conversation';
+                        listenBtn.classList.remove('listening');
+                    }
+                };
+                
+                window.speechSynthesis.speak(utterance);
+            }
+            
+            // --- Voice to Text (VTT) & Flow Control ---
+            
+            // The initial click to start the entire process
+            listenBtn.addEventListener('click', () => {
+                // If the app is in its initial ready state, we just need to start listening.
+                if (conversationStatus.dataset.isActive === 'false') {
+                    recognition.start();
+                }
+            });
+
+            recognition.onstart = () => {
+                listenBtn.textContent = 'Listening...';
+                listenBtn.classList.add('listening');
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                voiceTextInput.value = transcript;
+                setTimeout(() => { paymentForm.submit(); }, 500);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                if (event.error === 'no-speech') {
+                    voiceTextInput.value = 'I didn\'t hear anything. Please try again.';
+                } else {
+                    voiceTextInput.value = 'An error occurred during listening.';
+                }
+                listenBtn.textContent = 'Start Conversation';
+                listenBtn.classList.remove('listening');
+            };
+
+            recognition.onend = () => {
+                // Only reset the button text if not actively speaking.
+                if (!window.speechSynthesis.speaking) {
+                    listenBtn.textContent = 'Start Conversation';
+                    listenBtn.classList.remove('listening');
+                }
+            };
+            
+            // On page load, speak the first instruction.
+            if (textToSpeakDiv && textToSpeakDiv.textContent.trim()) {
+                // We use a small timeout to ensure the voice list is loaded.
+                setTimeout(() => speak(textToSpeakDiv.textContent), 200);
+            }
+        });
+    </script>
+</body>
+</html>

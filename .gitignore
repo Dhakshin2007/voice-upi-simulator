@@ -1,0 +1,20 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+venv/
+.env
+.env.*
+
+# VS Code / PyCharm / OS files
+*.log
+.idea/
+.DS_Store
+
+# SQLite or temporary DBs
+*.sqlite3
+*.db
+
+# Instance folder
+instance/

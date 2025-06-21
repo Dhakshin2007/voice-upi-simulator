@@ -1,0 +1,4 @@
+Flask==2.2.3
+thefuzz==0.20.0
+python-Levenshtein==0.20.9
+gunicorn
