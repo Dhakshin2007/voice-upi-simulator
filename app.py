@@ -14,7 +14,9 @@ MERCHANTS = [
     {"id": 2, "name": "Sharma Electronics", "location": "Electronics Street", "upi_id": "sharma@gpay", "keywords": ["sharma", "electronics", "mobile", "phone"]},
     {"id": 3, "name": "Punjabi Dhaba", "location": "Food Court", "upi_id": "dhaba@phonepe", "keywords": ["punjabi", "dhaba", "food", "restaurant", "eat"]},
     {"id": 4, "name": "Medical Store", "location": "Hospital Road", "upi_id": "medical@upi", "keywords": ["medical", "medicine", "pharmacy", "store", "tablet"]},
-    {"id": 5, "name": "Grocery Shop", "location": "Near Temple", "upi_id": "grocery@paytm", "keywords": ["grocery", "vegetables", "fruits", "shop", "sabzi"]},
+    {"id": 5, "name": "Ramu Grocery Shop", "location": "Near Temple", "upi_id": "Ramugrocery@paytm", "keywords": ["grocery", "vegetables", "fruits", "shop", "sabzi","Ramu"]},
+    {"id": 6, "name": "Ravi Grocery Shop", "location": "Near Bank", "upi_id": "Ravigrocery@paytm", "keywords": ["grocery", "vegetables", "fruits", "shop", "sabzi","Ravi"]},
+
 ]
 
 class VoicePaymentSystem:
